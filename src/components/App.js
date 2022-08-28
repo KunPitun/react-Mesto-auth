@@ -56,11 +56,14 @@ function App() {
     if (jwt) {
       auth.checkToken(jwt)
         .then((res) => {
-          if(res) {
+          if (res) {
             setLoggedIn(true);
             history.push("/");
           }
         })
+        .catch((err) => {
+          console.log(err);
+        });
     }
   }
 
@@ -111,11 +114,6 @@ function App() {
 
   function handleEditPlaceClick() {
     setIsAddPlacePopupOpen(!isAddPlacePopupOpen);
-  }
-
-  function handleOpenRegisterPopup(isRegistered) {
-    setIsRegistered(isRegistered);
-    setIsInfoTooltipOpen(!isInfoTooltipOpen);
   }
 
   function closeAllPopups() {
@@ -173,8 +171,16 @@ function App() {
       });
   }
 
-  function handleLogIn() {
-    setLoggedIn(true);
+  function handleLogin(email, password) {
+    auth.authorize(email, password)
+      .then((data) => {
+        if (data.token) {
+          localStorage.setItem('currentUserEmail', email);
+          setLoggedIn(true);
+          history.push("/");
+        }
+      })
+      .catch(err => console.log(err));
   }
 
   function handleLogOut() {
@@ -183,16 +189,30 @@ function App() {
     setLoggedIn(false);
   }
 
+  function handleRegister(email, password) {
+    auth.register(email, password)
+      .then(() => {
+        history.push('/sign-in');
+        setIsInfoTooltipOpen(true);
+        setIsRegistered(true);
+      })
+      .catch((err) => {
+        console.log(err);
+        setIsInfoTooltipOpen(true);
+        setIsRegistered(false);
+      });
+  }
+
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="page">
         <Header email={localStorage.getItem('currentUserEmail')} onLogOut={handleLogOut} isLoggedIn={loggedIn} />
         <Switch>
           <Route path='/sign-up'>
-            <Register openPopup={handleOpenRegisterPopup} />
+            <Register onRegister={handleRegister} />
           </Route>
           <Route path='/sign-in'>
-            <Login isLoggedIn={handleLogIn} />
+            <Login onLogin={handleLogin} />
           </Route>
           <ProtectedRoute exact path="/" loggedIn={loggedIn} component={Main} cards={cards}
             onCardLike={handleCardLike} onCardDelete={handleDeleteClick}
